@@ -1,7 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 dotenv.config();
 
 
@@ -65,7 +65,7 @@ app.post("/api/artworks", async (req, res) => {
       likes: 0,
       views: 0,
       commentsCount: 0,
-      
+
       // auto approval (NO admin approval system)
       isApproved: true,
       createdAt: new Date(),
@@ -86,6 +86,32 @@ app.post("/api/artworks", async (req, res) => {
       message: "Internal server error",
     });
   }
+});
+
+//show in the manageArtwork table
+app.get('/api/artworks/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    
+    const result = await artworksCollection
+      .find({ artistEmail: email })
+      .toArray();
+
+    return res.status(200).json(result);
+  } catch (error) {
+    console.error("FETCH_MY_ARTWORKS_ERROR:", error);
+    return res.status(500).json({ error: "Failed to fetch artworks" });
+  }
+});
+
+ app.delete("/api/artworks/:id", async (req, res) => {
+  const { id } = req.params;
+
+  const result = await artworksCollection.deleteOne({
+    _id: new ObjectId(id),
+  });
+
+  res.json(result);
 });
 
 
