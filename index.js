@@ -114,6 +114,19 @@ app.get('/api/artworks/:email', async (req, res) => {
   res.json(result);
 });
 
+ app.patch("/api/artworks/:id", async (req, res) => {
+      const { id } = req.params;
+      const updatedData = req.body;
+    //   console.log(updatedData);
+
+      const result = await artworksCollection.updateOne(
+        { _id: new ObjectId(id) },
+        { $set: updatedData },
+      );
+
+      res.json(result);
+    });
+
 
 
 
