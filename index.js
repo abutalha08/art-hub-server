@@ -127,6 +127,12 @@ app.get('/api/artworks/:email', async (req, res) => {
       res.json(result);
     });
 
+    app.get("/api/artworks", async (req, res) => {
+        const cursor = artworksCollection.find();
+        const result = await cursor.toArray();
+        res.send(result);
+    });
+
 
 
 
