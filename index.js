@@ -133,6 +133,13 @@ app.get('/api/artworks/:email', async (req, res) => {
         res.send(result);
     });
 
+    app.get("/api/single-artworks/:id", async (req, res) => {
+        const {id} = req.params;
+        const query = {_id: new ObjectId(id)};
+        const result = await artworksCollection.findOne(query);
+        res.send(result);
+    })
+
 
 
 
