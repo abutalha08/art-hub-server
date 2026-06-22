@@ -35,6 +35,7 @@ async function run() {
 // DB
 const db = client.db("art_hub_db");
 const artworksCollection = db.collection("artworks");
+const userCollection = db.collection("user");
 
 // CREATE ARTWORK 
 app.post("/api/artworks", async (req, res) => {
@@ -88,6 +89,8 @@ app.post("/api/artworks", async (req, res) => {
   }
 });
 
+
+
 //show in the manageArtwork table
 app.get('/api/artworks/:email', async (req, res) => {
   try {
@@ -139,6 +142,40 @@ app.get('/api/artworks/:email', async (req, res) => {
         const result = await artworksCollection.findOne(query);
         res.send(result);
     })
+
+    app.get("/api/artist-stats/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const result = await artworksCollection
+      .aggregate([
+        {
+          $match: {
+            artistEmail: email,
+          },
+        },
+        {
+          $group: {
+            _id: null,
+            totalArtworks: { $sum: 1 },
+            totalArtworkValue: { $sum: "$price" },
+          },
+        },
+      ])
+      .toArray();
+
+    res.json(
+      result[0] || {
+        totalArtworks: 0,
+        totalArtworkValue: 0,
+      }
+    );
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to fetch artist stats",
+    });
+  }
+});
 
 
 
