@@ -202,6 +202,7 @@ app.post("/api/purchases", async (req, res) => {
     const newPurchase = {
       artworkId: artwork._id,
       title: artwork.title,
+       image: artwork.image,
       price: artwork.price,
       category: artwork.category,
       artistName: artwork.artistName,
@@ -227,6 +228,24 @@ app.post("/api/purchases", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Internal server error",
+    });
+  }
+});
+app.get("/api/purchases/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const result = await purchasesCollection
+      .find({ buyerEmail: email })
+      .sort({ purchaseDate: -1 })
+      .toArray();
+
+    res.send(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).send({
+      success: false,
+      message: "Failed to fetch purchases",
     });
   }
 });
