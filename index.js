@@ -36,6 +36,7 @@ async function run() {
 const db = client.db("art_hub_db");
 const artworksCollection = db.collection("artworks");
 const userCollection = db.collection("user");
+const purchasesCollection = db.collection("purchases");
 
 // CREATE ARTWORK 
 app.post("/api/artworks", async (req, res) => {
@@ -173,6 +174,59 @@ app.get('/api/artworks/:email', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       message: "Failed to fetch artist stats",
+    });
+  }
+});
+
+app.post("/api/purchases", async (req, res) => {
+  try {
+    const {
+      artworkId,
+      buyerEmail,
+      buyerName,
+    } = req.body;
+
+    // 1. artwork fetch
+    const artwork = await artworksCollection.findOne({
+      _id: new ObjectId(artworkId),
+    });
+
+    if (!artwork) {
+      return res.status(404).json({
+        success: false,
+        message: "Artwork not found",
+      });
+    }
+
+    // 2. purchase object
+    const newPurchase = {
+      artworkId: artwork._id,
+      title: artwork.title,
+      price: artwork.price,
+      category: artwork.category,
+      artistName: artwork.artistName,
+      artistEmail: artwork.artistEmail,
+
+      buyerEmail,
+      buyerName,
+
+      purchasedAt: new Date(),
+    };
+
+    // 3. save to DB
+    const result = await purchasesCollection.insertOne(newPurchase);
+
+    res.status(201).json({
+      success: true,
+      message: "Purchase successful",
+      insertedId: result.insertedId,
+    });
+
+  } catch (error) {
+    console.error("PURCHASE ERROR:", error);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
     });
   }
 });
