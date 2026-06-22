@@ -249,6 +249,24 @@ app.get("/api/purchases/:email", async (req, res) => {
     });
   }
 });
+app.get("/api/buyer-stats/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const totalCollection = await purchasesCollection.countDocuments({
+      buyerEmail: email,
+    });
+
+    res.json({
+      totalCollection,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch buyer stats",
+    });
+  }
+});
 
 
 
