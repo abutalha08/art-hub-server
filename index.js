@@ -37,6 +37,7 @@ const db = client.db("art_hub_db");
 const artworksCollection = db.collection("artworks");
 const userCollection = db.collection("user");
 const purchasesCollection = db.collection("purchases");
+const commentsCollection = db.collection("comments");
 
 // CREATE ARTWORK 
 app.post("/api/artworks", async (req, res) => {
@@ -237,7 +238,7 @@ app.get("/api/purchases/:email", async (req, res) => {
 
     const result = await purchasesCollection
       .find({ buyerEmail: email })
-      .sort({ purchaseDate: -1 })
+      .sort({ purchasedAt: -1 })
       .toArray();
 
     res.send(result);
@@ -264,6 +265,156 @@ app.get("/api/buyer-stats/:email", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "Failed to fetch buyer stats",
+    });
+  }
+});
+
+//Comment Create API
+app.post("/api/artworks/:id/comments", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const {
+      userId,
+      userName,
+      userEmail,
+      comment,
+    } = req.body;
+
+    if (!comment?.trim()) {
+      return res.status(400).json({
+        success: false,
+        message: "Comment is required",
+      });
+    }
+
+    // Purchase check
+    const purchased = await purchasesCollection.findOne({
+      artworkId: new ObjectId(id),
+      buyerEmail: userEmail,
+    });
+
+    if (!purchased) {
+      return res.status(403).json({
+        success: false,
+        message: "Purchase required before commenting",
+      });
+    }
+
+    const newComment = {
+      artworkId: new ObjectId(id),
+      userId,
+      userName,
+      userEmail,
+      comment,
+      createdAt: new Date(),
+      updatedAt: null,
+    };
+
+    const result = await commentsCollection.insertOne(
+      newComment
+    );
+
+    res.status(201).json({
+      success: true,
+      insertedId: result.insertedId,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to add comment",
+    });
+  }
+});
+
+//Get Comments API
+app.get("/api/artworks/:id/comments", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const comments = await commentsCollection
+      .find({
+        artworkId: new ObjectId(id),
+      })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.send(comments);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Failed to load comments",
+    });
+  }
+});
+
+app.get(
+  "/api/artworks/:id/can-comment/:email",
+  async (req, res) => {
+    try {
+      const { id, email } = req.params;
+
+      const purchased =
+        await purchasesCollection.findOne({
+          artworkId: new ObjectId(id),
+          buyerEmail: email,
+        });
+
+      res.send({
+        canComment: !!purchased,
+      });
+    } catch (error) {
+      res.status(500).send({
+        canComment: false,
+      });
+    }
+  }
+);
+
+app.patch("/api/comments/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { comment } = req.body;
+
+    const result =
+      await commentsCollection.updateOne(
+        {
+          _id: new ObjectId(id),
+        },
+        {
+          $set: {
+            comment,
+            updatedAt: new Date(),
+          },
+        }
+      );
+
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+    });
+  }
+});
+
+app.delete("/api/comments/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const result =
+      await commentsCollection.deleteOne({
+        _id: new ObjectId(id),
+      });
+
+    res.send(result);
+  } catch (error) {
+    res.status(500).send({
+      success: false,
     });
   }
 });
