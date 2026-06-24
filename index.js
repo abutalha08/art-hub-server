@@ -456,6 +456,69 @@ app.post('/api/subscribes', async (req, res) => {
     res.send(updateResult);
 })
 
+// Artist Sales History
+app.get("/api/artist-sales/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const sales = await purchasesCollection
+      .find({
+        artistEmail: email,
+      })
+      .sort({ purchasedAt: -1 })
+      .toArray();
+
+    res.send(sales);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).send({
+      success: false,
+      message: "Failed to fetch sales",
+    });
+  }
+});
+
+// Artist Sales Stats
+app.get("/api/artist-sales-stats/:email", async (req, res) => {
+  try {
+    const { email } = req.params;
+
+    const totalSales =
+      await purchasesCollection.countDocuments({
+        artistEmail: email,
+      });
+
+    const salesAmount =
+      await purchasesCollection
+        .aggregate([
+          {
+            $match: {
+              artistEmail: email,
+            },
+          },
+          {
+            $group: {
+              _id: null,
+              totalRevenue: {
+                $sum: "$price",
+              },
+            },
+          },
+        ])
+        .toArray();
+
+    res.send({
+      totalSales,
+      totalRevenue:
+        salesAmount[0]?.totalRevenue || 0,
+    });
+  } catch (error) {
+    res.status(500).send({
+      success: false,
+    });
+  }
+});
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
