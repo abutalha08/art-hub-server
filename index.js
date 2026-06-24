@@ -38,6 +38,8 @@ const artworksCollection = db.collection("artworks");
 const userCollection = db.collection("user");
 const purchasesCollection = db.collection("purchases");
 const commentsCollection = db.collection("comments");
+const subscriptionCollection = db.collection("subscription");
+const subscribeCollection = db.collection('subscribe')
 
 // CREATE ARTWORK 
 app.post("/api/artworks", async (req, res) => {
@@ -419,7 +421,40 @@ app.delete("/api/comments/:id", async (req, res) => {
   }
 });
 
+//subscription
+app.get('/api/subscriptions', async (req, res) => {
+    const query = {}
+    if(req.query.subscription_id){
+        query.subscription_id = req.query.subscription_id
+    }
 
+    const subscription = await subscriptionCollection.findOne(query);
+    res.send(subscription)
+})
+
+app.post('/api/subscribes', async (req, res) => {
+    const data = req.body;
+    const subsInfo = {
+        ...data,
+        createdAt: new Date()
+    }
+
+    const result = await subscribeCollection.insertOne(subsInfo);
+
+    //update the user plan information
+    const filter = { email: data.email};
+
+    //update the value of the 'quantity field to 9
+    const updateDocument = {
+        $set: {
+            subscription: data.subscriptionId,
+        }
+    }
+
+    const updateResult = await userCollection.updateOne(filter, updateDocument);
+
+    res.send(updateResult);
+})
 
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
