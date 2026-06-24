@@ -520,6 +520,60 @@ app.get("/api/artist-sales-stats/:email", async (req, res) => {
   }
 });
 
+// =============================
+// ADMIN - GET ALL USERS
+// =============================
+app.get("/api/users", async (req, res) => {
+  try {
+    const users = await userCollection
+      .find({})
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    res.send(users);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).send({
+      success: false,
+      message: "Failed to fetch users",
+    });
+  }
+});
+
+// =============================
+// ADMIN - CHANGE USER ROLE
+// =============================
+app.patch("/api/users/:id/role", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { role } = req.body;
+
+    const result =
+      await userCollection.updateOne(
+        {
+          _id: new ObjectId(id),
+        },
+        {
+          $set: {
+            role,
+          },
+        }
+      );
+
+    res.send(result);
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).send({
+      success: false,
+      message: "Failed to update role",
+    });
+  }
+});
+
+
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
