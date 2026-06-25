@@ -93,6 +93,11 @@ app.post("/api/artworks", async (req, res) => {
   }
 });
 
+app.get("/api/artworks/featured", async (req, res) => {
+      const result = await artworksCollection.find().limit(6).toArray()
+      res.json(result)
+    })
+
 
 
 //show in the manageArtwork table
