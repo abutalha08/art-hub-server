@@ -642,6 +642,55 @@ app.get("/api/admin/transactions", async (req, res) => {
   }
 });
 
+// ADMIN ANALYTICS OVERVIEW
+app.get("/api/admin/analytics", async (req, res) => {
+  try {
+    // Total Users
+    const totalUsers = await userCollection.countDocuments();
+
+    // Total Artists
+    const totalArtists = await userCollection.countDocuments({
+      role: "artist",
+    });
+
+    // Total Artworks Sold
+    const totalArtworksSold =
+      await purchasesCollection.countDocuments();
+
+    // Total Revenue
+    const revenueData =
+      await purchasesCollection
+        .aggregate([
+          {
+            $group: {
+              _id: null,
+              totalRevenue: {
+                $sum: "$price",
+              },
+            },
+          },
+        ])
+        .toArray();
+
+    const totalRevenue =
+      revenueData[0]?.totalRevenue || 0;
+
+    res.send({
+      totalUsers,
+      totalArtists,
+      totalArtworksSold,
+      totalRevenue,
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).send({
+      success: false,
+      message: "Failed to load analytics",
+    });
+  }
+});
+
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
