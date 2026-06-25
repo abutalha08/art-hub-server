@@ -691,6 +691,70 @@ app.get("/api/admin/analytics", async (req, res) => {
   }
 });
 
+// ADMIN CHART DATA
+app.get("/api/admin/charts", async (req, res) => {
+  try {
+    // Sales by Month
+    const salesData = await purchasesCollection
+      .aggregate([
+        {
+          $group: {
+            _id: {
+              month: {
+                $dateToString: {
+                  format: "%Y-%m",
+                  date: "$purchasedAt",
+                },
+              },
+            },
+            totalSales: {
+              $sum: "$price",
+            },
+          },
+        },
+        {
+          $sort: {
+            "_id.month": 1,
+          },
+        },
+      ])
+      .toArray();
+
+    // Artworks by Category
+    const categoryData =
+      await artworksCollection
+        .aggregate([
+          {
+            $group: {
+              _id: "$category",
+              count: { $sum: 1 },
+            },
+          },
+        ])
+        .toArray();
+
+    res.send({
+      salesChart: salesData.map((item) => ({
+        month: item._id.month,
+        sales: item.totalSales,
+      })),
+
+      categoryChart:
+        categoryData.map((item) => ({
+          category: item._id,
+          count: item.count,
+        })),
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).send({
+      success: false,
+      message: "Failed to load chart data",
+    });
+  }
+});
+
 
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
