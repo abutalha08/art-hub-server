@@ -134,11 +134,43 @@ app.get('/api/artworks/:email', async (req, res) => {
       res.json(result);
     });
 
-    app.get("/api/artworks", async (req, res) => {
-        const cursor = artworksCollection.find();
-        const result = await cursor.toArray();
-        res.send(result);
-    });
+app.get("/api/artworks", async (req, res) => {
+  const search = req.query.search;
+  const category = req.query.category;
+  const sort = req.query.sort;
+
+  const query = {};
+
+  if (search) {
+    query.title = {
+      $regex: search,
+      $options: "i",
+    };
+  }
+
+  if (category) {
+    query.category = {
+      $in: category.split(","),
+    };
+  }
+
+  let sortOption = {};
+
+  if (sort === "price-low-high") {
+    sortOption = { price: 1 };
+  } else if (sort === "price-high-low") {
+    sortOption = { price: -1 };
+  } else {
+    sortOption = { createdAt: -1 };
+  }
+
+  const result = await artworksCollection
+    .find(query)
+    .sort(sortOption)
+    .toArray();
+
+  res.send(result);
+});
 
     app.get("/api/single-artworks/:id", async (req, res) => {
         const {id} = req.params;
