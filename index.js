@@ -574,6 +574,75 @@ app.patch("/api/users/:id/role", async (req, res) => {
 });
 
 
+app.get("/api/admin/transactions", async (req, res) => {
+  try {
+
+    // Purchase Transactions
+    const purchases = await purchasesCollection
+      .find({})
+      .sort({ purchasedAt: -1 })
+      .toArray();
+
+    const purchaseTransactions =
+      purchases.map((item) => ({
+        _id: item._id,
+
+        transactionType: "Purchase",
+
+        userEmail: item.buyerEmail,
+
+        artistEmail: item.artistEmail,
+
+        amount: item.price,
+
+        date: item.purchasedAt,
+      }));
+
+    // Subscription Transactions
+    const subscriptions =
+      await subscribeCollection
+        .find({})
+        .sort({ createdAt: -1 })
+        .toArray();
+
+    const subscriptionTransactions =
+      subscriptions.map((item) => ({
+        _id: item._id,
+
+        transactionType: "Subscription",
+
+        userEmail: item.email,
+
+        artistEmail: "-",
+
+        amount: item.amount || 0,
+
+        date: item.createdAt,
+      }));
+
+    const allTransactions = [
+      ...purchaseTransactions,
+      ...subscriptionTransactions,
+    ].sort(
+      (a, b) =>
+        new Date(b.date) -
+        new Date(a.date)
+    );
+
+    res.send(allTransactions);
+
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).send({
+      success: false,
+      message:
+        "Failed to load transactions",
+    });
+  }
+});
+
+
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
   } finally {
     // Ensures that the client will close when you finish/error
